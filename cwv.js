@@ -1,18 +1,3 @@
-/*
-Run npm i -s csv-parser json2csv playwrite
-
-create a csv with first column headed url  (must be lowercase url)
-
-run:
-node cwv input=test.csv output=test-done.csv
-
-
-where input= is the input csv file, output= is the filename to save the csv of test results
-
-default runs throttled, roughly matching lighthouse mobile test, if you want to run unthrottled, add nothrottle flag:
-node cwv input=test.csv output=test-done.csv nothrottle
-*/
-
 const csv = require('csv-parser');
 const Json2csv = require('json2csv').Parser;
 const { chromium, devices } = require('playwright');
