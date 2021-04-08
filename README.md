@@ -15,7 +15,7 @@ But … It doesn't scroll the page or offer video capture at the moment. Scrolli
 
 ## Install
 
-Download the files from git, you can clone them, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository) or download the zip file (click the green code button and click Download Zip)
+Download the files from git, you can clone them, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository) or download the zip file (click the green code button and click Download Zip), or just click on the latest release and download the files.
 
 Then on the command line, whilst in the directory you cloned or extracted the files to:
 ```
