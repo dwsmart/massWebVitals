@@ -67,8 +67,6 @@ if (!inputFile || !outputFile) {
         const page = await context.newPage();
 
         const client = await page.context().newCDPSession(page);
-        await client.send('ServiceWorker.enable');
-        await client.send('ServiceWorker.stopAllWorkers');
         if (throttle) {
             await client.send('Network.emulateNetworkConditions', {
                 'offline': false,
@@ -82,15 +80,22 @@ if (!inputFile || !outputFile) {
             await page.goto(url, {
                 waitUntil: 'networkidle0'
             });
-            try {
-                await page.addScriptTag({ content: jsContent.toString() })
-            } catch (e) {
-                console.log(e);
-            }
-            await page.waitForTimeout(300);
             if (cookie !== '') {
                 await page.click(cookie);
+                try {
+                    await page.addScriptTag({ content: jsContent.toString() })
+                    await page.waitForTimeout(300);
+                } catch (e) {
+                    console.log(e);
+                }
+                await page.waitForTimeout(300);
             } else {
+                try {
+                    await page.addScriptTag({ content: jsContent.toString() })
+                    await page.waitForTimeout(300);
+                } catch (e) {
+                    console.log(e);
+                }
                 await page.evaluate(() => {
                     const elem = document.createElement('a');
                     elem.id = 'ttbClickTarget';
@@ -260,7 +265,7 @@ if (!inputFile || !outputFile) {
         for (let i = 0; i < urls.length; i++) {
             let data = await getMetric(urls[i].url, urls[i].cookie);
             if (data && data.CLSscore) {
-                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `LCP: ${data.FID.fid} FID: ${data.FID.fid} CLS: ${data.CLSscore.CLS}`)
+                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `LCP: ${data.LCP.lcp} FID: ${data.FID.fid} CLS: ${data.CLSscore.CLS}`)
                 op.push({ url: urls[i].url, CLS: data.CLSscore.CLS, CLSVerdict: data.CLSscore.verdict, CLSentries: JSON.stringify(data.CLSentries, null, 2), FID: data.FID.fid, FIDVerdict: data.FID.verdict, LCP: data.LCP.lcp, LCPVerdict: data.LCP.verdict, LCPElement: data.LCP.element, video: data.videoPath })
             } else {
                 console.log(`${i + 1} of ${urls.length} `, urls[i].url, 'Error');
