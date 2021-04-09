@@ -8,6 +8,26 @@ let inputFile = null;
 let outputFile = null;
 let throttle = true;
 let desktop = false;
+let illegalRe = /[\/\?<>\\:\*\|"]/g;
+let controlRe = /[\x00-\x1f\x80-\x9f]/g;
+let reservedRe = /^\.+$/;
+let windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+let windowsTrailingRe = /[\. ]+$/;
+let replacement = '';
+
+function sanitizeURL(input) {
+    if (typeof input !== 'string') {
+        throw new Error('Input must be string');
+    }
+    let sanitized = input
+        .replace(illegalRe, replacement)
+        .replace(controlRe, replacement)
+        .replace(reservedRe, replacement)
+        .replace(windowsReservedRe, replacement)
+        .replace(windowsTrailingRe, replacement);
+    const timeStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/ /g, '_').replace(/:/g, '_');
+    return `${sanitized}_${timeStamp}.webm`;
+}
 const args = process.argv.slice(2);
 if (args.find(v => v.includes('input='))) {
     inputFile = args.find(v => v.includes('input=')).replace('input=', '');
@@ -202,8 +222,11 @@ if (!inputFile || !outputFile) {
                 }),
                 page.waitForTimeout(5000)
             ]);
-            metricsArray.videoPath = await page.video().path();
+            let playwrightVidname = await page.video().path();
+            const finalVidname = sanitizeURL(url);
             await browser.close();
+            fs.renameSync(`videos/${playwrightVidname.replace(/^videos\\/g, '').replace(/^videos/g, '')}`, `videos/${finalVidname}`);
+            metricsArray.videoPath = `videos/${finalVidname}`
             return metricsArray;
         } catch (err) {
             console.log('Error loading page:', err);
@@ -214,7 +237,6 @@ if (!inputFile || !outputFile) {
     let testURLs = []
     const csvPipe = fs.createReadStream(inputFile).pipe(csv());
     csvPipe.on('data', async(row) => {
-
         csvPipe.pause();
         testURLs.push({ url: row.url, cookie: row.cookie_close });
 

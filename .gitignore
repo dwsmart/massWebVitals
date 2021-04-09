@@ -106,3 +106,4 @@ dist
 #massWebVitals
 videos/*.webm
 .vscode/
+tests
