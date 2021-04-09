@@ -65,7 +65,10 @@ if (!inputFile || !outputFile) {
         }
 
         const page = await context.newPage();
+
         const client = await page.context().newCDPSession(page);
+        await client.send('ServiceWorker.enable');
+        await client.send('ServiceWorker.stopAllWorkers');
         if (throttle) {
             await client.send('Network.emulateNetworkConditions', {
                 'offline': false,
@@ -224,12 +227,18 @@ if (!inputFile || !outputFile) {
             ]);
             let playwrightVidname = await page.video().path();
             const finalVidname = sanitizeURL(url);
+            await client.detach();
+            await page.close();
+            await context.close();
             await browser.close();
             fs.renameSync(`videos/${playwrightVidname.replace(/^videos\\/g, '').replace(/^videos/g, '')}`, `videos/${finalVidname}`);
             metricsArray.videoPath = `videos/${finalVidname}`
             return metricsArray;
         } catch (err) {
             console.log('Error loading page:', err);
+            await client.detach();
+            await page.close();
+            await context.close();
             await browser.close();
             return
         }
