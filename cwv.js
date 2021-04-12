@@ -78,7 +78,7 @@ if (!inputFile || !outputFile) {
         }
         try {
             await page.goto(url, {
-                waitUntil: 'networkidle0'
+                waitUntil: 'networkidle'
             });
             if (cookie !== '') {
                 await page.click(cookie);
@@ -99,7 +99,7 @@ if (!inputFile || !outputFile) {
                 await page.evaluate(() => {
                     const elem = document.createElement('a');
                     elem.id = 'ttbClickTarget';
-                    elem.href = '#';
+                    elem.onclick = "javascript: console.log('clicked');";
                     elem.innerHTML = "fid clicker"
                     elem.style.position = "absolute"
                     elem.style.top = "120px"
