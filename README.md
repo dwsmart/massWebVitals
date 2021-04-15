@@ -3,6 +3,8 @@ A node CLI script to grab [Largest Contentful Paint](https://web.dev/lcp/), [Fir
 
 The script will load the page, scroll down it's entire length & capture a video in `.webm` format, with the CWV overlaid (in most cases). It will then produce a `.csv` value with the test results for each URL, and a reference to the video file.
 
+As of version 0.0.5, the script will give you both the older style Cumulative Layout Shift, and the new, maximum session window with 1 second gap, capped at 5 seconds one, as [detailed here](https://web.dev/evolving-cls/), named old & new CLS respectively.
+
 ## Important!!!
 Like some drinks are best served chilled, the Core Web Vitals are best as Real User Metrics. This script is far from that and fits firmly in the Lab test bucket. All the figures should be treated as synthetic, especially `FID`. 
 
@@ -76,8 +78,10 @@ Some sites might set strict CSP policies, in which case, the script injection th
 The csv will contain the following columns
 
 * `url` - The URL tested.
-* `CLS` - The CLS score.
-* `CLSVerdit` - Poor, Needs Improvement or Good, based on the currently published thresholds.
+* `newCLS` - The CLS score based on the new, session **maximum session window with 1 second gap, capped at 5 seconds.** method.
+* `newCLSVerdit` - Poor, Needs Improvement or Good, based on the currently published thresholds, based on the new method.
+* `oldCLS` - The CLS score based on the older, total CLS metric.
+* `oldCLSVerdit` - Poor, Needs Improvement or Good, based on the currently published thresholds, based on the older method.
 * `CLSentries` - An array of any elements that contributed to shift, in JSON format.
 * `FID` - The FID score (in Ms).
 * `FIDVerdit` - Poor, Needs Improvement or Good, based on the currently published thresholds.

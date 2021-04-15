@@ -46,8 +46,9 @@ if (!inputFile || !outputFile) {
 }
 (async() => {
     let op = [];
+    const browser = await chromium.launch();
     const getMetric = async function(url, cookie) {
-        const browser = await chromium.launch();
+
 
         let context = await browser.newContext({
             ...android,
@@ -114,13 +115,14 @@ if (!inputFile || !outputFile) {
                 });
             }
             await autoScroll(page);
-
+            await page.waitForTimeout(300);
             const metricsArray = await Promise.race([page.evaluate(() => {
                     return new Promise(resolve => {
                         let FID = 0;
                         let CLS = 0;
                         let LCP = 0;
                         let CLSscore = { CLS: 0, verdict: 'good - none measured' };
+                        let newCLSscore = { CLS: 0, verdict: 'good - none measured' };
                         let CLSentries = [];
                         let LCPVerdict = 0;
                         let LCPElement = '';
@@ -130,6 +132,7 @@ if (!inputFile || !outputFile) {
                             setTimeout(function() {
                                 resolve({
                                     CLSscore,
+                                    newCLSscore,
                                     CLSentries,
                                     FID: FIDVerdict,
                                     LCP: LCPVerdict
@@ -139,20 +142,24 @@ if (!inputFile || !outputFile) {
 
                         new PerformanceObserver(list => {
                             list.getEntries().forEach(entry => {
-                                LCP = parseFloat(entry.renderTime);
-                                if (LCP === 0) {
-                                    LCP = parseFloat(entry.loadTime);
+                                if (parseFloat(entry.renderTime) !== 0) {
+                                    LCP = parseFloat(entry.renderTime)
+                                } else {
+                                    parseFloat(entry.renderTime)
                                 }
+                                if (entry.element) {
+                                    let n = entry.element.nodeName;
 
-                                let n = entry.element.nodeName;
-
-                                if (entry.element.id !== '') {
-                                    n += '#' + entry.element.id;
+                                    if (entry.element.id !== '') {
+                                        n += '#' + entry.element.id;
+                                    }
+                                    if (entry.element.className !== '') {
+                                        n += '.' + entry.element.className.replace(/ /g, '.');
+                                    }
+                                    LCPElement = n.replace('.ttb-lcp-candidate', '');
+                                } else {
+                                    LCPElement = '';
                                 }
-                                if (entry.element.className !== '') {
-                                    n += '.' + entry.element.className.replace(/ /g, '.');
-                                }
-                                LCPElement = n.replace('.ttb-lcp-candidate', '');
 
                                 let ver = 'good';
                                 if (LCP > 2500 && LCP <= 4000) {
@@ -205,6 +212,32 @@ if (!inputFile || !outputFile) {
                             buffered: true
                         });
 
+                        let max = 0,
+                            curr = 0,
+                            firstTs = Number.NEGATIVE_INFINITY,
+                            prevTs = Number.NEGATIVE_INFINITY;
+
+                        new PerformanceObserver((entryList) => {
+                            for (const entry of entryList.getEntries()) {
+                                if (entry.hadRecentInput) continue;
+                                if (entry.startTime - firstTs > 5000 || entry.startTime - prevTs > 1000) {
+                                    firstTs = entry.startTime;
+                                    curr = 0;
+                                }
+                                prevTs = entry.startTime;
+                                curr += entry.value;
+                                max = Math.max(max, curr);
+                                let ver = 0;
+                                if (max > 0.1 && max <= 0.25) {
+                                    ver = 'needs improvement';
+                                }
+                                if (max > 0.25) {
+                                    ver = 'poor';
+                                }
+                                newCLSscore = { CLS: max.toFixed(4), verdict: ver }
+                            }
+                        }).observe({ type: 'layout-shift', buffered: true });
+
                         new PerformanceObserver(list => {
                             list.getEntries().forEach(entry => {
                                 FID = parseFloat(entry.processingStart - entry.startTime);
@@ -232,19 +265,15 @@ if (!inputFile || !outputFile) {
             ]);
             let playwrightVidname = await page.video().path();
             const finalVidname = sanitizeURL(url);
-            await client.detach();
             await page.close();
             await context.close();
-            await browser.close();
             fs.renameSync(`videos/${playwrightVidname.replace(/^videos\\/g, '').replace(/^videos/g, '')}`, `videos/${finalVidname}`);
             metricsArray.videoPath = `videos/${finalVidname}`
             return metricsArray;
         } catch (err) {
             console.log('Error loading page:', err);
-            await client.detach();
             await page.close();
             await context.close();
-            await browser.close();
             return
         }
     }
@@ -265,14 +294,16 @@ if (!inputFile || !outputFile) {
         for (let i = 0; i < urls.length; i++) {
             let data = await getMetric(urls[i].url, urls[i].cookie);
             if (data && data.CLSscore) {
-                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `LCP: ${data.LCP.lcp} FID: ${data.FID.fid} CLS: ${data.CLSscore.CLS}`)
-                op.push({ url: urls[i].url, CLS: data.CLSscore.CLS, CLSVerdict: data.CLSscore.verdict, CLSentries: JSON.stringify(data.CLSentries, null, 2), FID: data.FID.fid, FIDVerdict: data.FID.verdict, LCP: data.LCP.lcp, LCPVerdict: data.LCP.verdict, LCPElement: data.LCP.element, video: data.videoPath })
+                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `LCP: ${data.LCP.lcp} FID: ${data.FID.fid} old CLS: ${data.CLSscore.CLS} new CLS: ${data.newCLSscore.CLS}`)
+                op.push({ url: urls[i].url, newCLS: data.newCLSscore.CLS, newCLSVerdict: data.newCLSscore.verdict, oldCLS: data.CLSscore.CLS, oldCLSVerdict: data.CLSscore.verdict, CLSentries: JSON.stringify(data.CLSentries, null, 2), FID: data.FID.fid, FIDVerdict: data.FID.verdict, LCP: data.LCP.lcp, LCPVerdict: data.LCP.verdict, LCPElement: data.LCP.element, video: data.videoPath })
             } else {
                 console.log(`${i + 1} of ${urls.length} `, urls[i].url, 'Error');
                 op.push({
                     url: urls[i].url,
-                    CLS: 'Error',
-                    CLSVerdict: '',
+                    newCLS: 'Error',
+                    newCLSVerdict: '',
+                    oldCLS: '',
+                    oldCLSVerdict: '',
                     CLSentries: '',
                     FID: '',
                     FIDVerdict: '',
@@ -284,10 +315,11 @@ if (!inputFile || !outputFile) {
             }
         }
         console.log(`creating ${outputFile}`);
-        const j2csv = new Json2csv(['url', 'CLS', 'CLS Verdict', 'CLS Entries', 'FID', 'FID Verdict', 'LCP', 'LCP Verdict', 'LCP Element', 'Video']);
+        const j2csv = new Json2csv(['url', 'newCLS', 'newCLS Verdict', 'oldCLS', 'OldCLS Verdict', 'CLS Entries', 'FID', 'FID Verdict', 'LCP', 'LCP Verdict', 'LCP Element', 'Video']);
         const csv = j2csv.parse(op);
         fs.writeFileSync(outputFile, csv, 'utf-8')
         console.log(`${outputFile} saved - done!`);
+        await browser.close();
     }
 })();
 

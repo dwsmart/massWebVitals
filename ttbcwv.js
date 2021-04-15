@@ -56,12 +56,19 @@ function sendToHolder({
         holder.appendChild(extractionSpan);
     }
 }
-var ttbCLS = 0;
-var ttbLCP = 0;
-var ttbFID = 0;
+let ttbCLS = 0,
+    ttbLCP = 0,
+    ttbFID = 0,
+    ttbCLSmax = 0,
+    ttbCLSCurr = 0;
 sendToHolder({
-    name: 'CLS',
+    name: 'old CLS',
     delta: ttbCLS.toFixed(4),
+    verdict: 0
+});
+sendToHolder({
+    name: 'new CLS',
+    delta: ttbCLSmax.toFixed(4),
     verdict: 0
 });
 var firstHiddenTime = document.visibilityState === 'hidden' ? 0 : Infinity;
@@ -70,6 +77,34 @@ document.addEventListener('visibilitychange', (event) => {
 }, {
     once: true
 });
+let ttbfirstTs = Number.NEGATIVE_INFINITY,
+    ttbprevTs = Number.NEGATIVE_INFINITY;
+
+new PerformanceObserver((entryList) => {
+    for (const entry of entryList.getEntries()) {
+        if (entry.hadRecentInput) continue;
+        if (entry.startTime - ttbfirstTs > 5000 || entry.startTime - ttbprevTs > 1000) {
+            ttbfirstTs = entry.startTime;
+            ttbCLSCurr = 0;
+        }
+        ttbprevTs = entry.startTime;
+        ttbCLSCurr += entry.value;
+        ttbCLSmax = Math.max(ttbCLSmax, ttbCLSCurr);
+        let ver = 0;
+        if (ttbCLSmax > 0.1 && ttbCLSmax <= 0.25) {
+            ver = 1;
+        }
+        if (ttbCLSmax > 0.25) {
+            ver = 2;
+        }
+        sendToHolder({
+            name: 'new CLS',
+            delta: ttbCLSmax.toFixed(4),
+            verdict: ver
+        });
+    }
+}).observe({ type: 'layout-shift', buffered: true });
+
 new PerformanceObserver(list => {
     list.getEntries().forEach(entry => {
         if (entry.hadRecentInput) return;
@@ -90,7 +125,7 @@ new PerformanceObserver(list => {
             ver = 2;
         }
         sendToHolder({
-            name: 'CLS',
+            name: 'old CLS',
             delta: ttbCLS.toFixed(4),
             verdict: ver
         });
@@ -101,6 +136,7 @@ new PerformanceObserver(list => {
 });
 new PerformanceObserver(list => {
     list.getEntries().forEach(entry => {
+        console.log(entry);
         ttbLCP = parseFloat(entry.renderTime);
         if (ttbLCP === 0) {
             ttbLCP = parseFloat(entry.loadTime);
