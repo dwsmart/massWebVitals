@@ -1,7 +1,14 @@
 const csv = require('csv-parser');
 const Json2csv = require('json2csv').Parser;
-const { chromium, devices } = require('playwright');
-const android = devices['Galaxy S5'];
+const { chromium } = require('playwright');
+const android = {
+    userAgent: 'Mozilla/5.0 (Linux; Android 6.0.1; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.0 Mobile Safari/537.36',
+    viewport: { width: 360, height: 640 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+    defaultBrowserType: 'chromium'
+}
 const fs = require('fs');
 let jsContent = fs.readFileSync('./ttbcwv.js');
 let inputFile = null;
@@ -47,20 +54,23 @@ if (!inputFile || !outputFile) {
 (async() => {
     let op = [];
     const browser = await chromium.launch();
+    console.log(`Testing with chromium ${browser.version()}`);
     const getMetric = async function(url, cookie) {
 
 
         let context = await browser.newContext({
             ...android,
             recordVideo: {
-                dir: 'videos/'
+                dir: 'videos/',
+                size: { width: 360, height: 640 }
             }
         })
         if (desktop) {
             await context.close();
             context = await browser.newContext({
                 recordVideo: {
-                    dir: 'videos/'
+                    dir: 'videos/',
+                    size: { width: 1280, height: 720 }
                 }
             })
         }
@@ -227,7 +237,7 @@ if (!inputFile || !outputFile) {
                                 prevTs = entry.startTime;
                                 curr += entry.value;
                                 max = Math.max(max, curr);
-                                let ver = 0;
+                                let ver = 'good';
                                 if (max > 0.1 && max <= 0.25) {
                                     ver = 'needs improvement';
                                 }
