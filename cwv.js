@@ -1,14 +1,7 @@
 const csv = require('csv-parser');
 const Json2csv = require('json2csv').Parser;
 const { chromium } = require('playwright');
-const android = {
-    userAgent: 'Mozilla/5.0 (Linux; Android 6.0.1; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.0 Mobile Safari/537.36',
-    viewport: { width: 360, height: 640 },
-    deviceScaleFactor: 3,
-    isMobile: true,
-    hasTouch: true,
-    defaultBrowserType: 'chromium'
-}
+
 const fs = require('fs');
 let jsContent = fs.readFileSync('./ttbcwv.js');
 let inputFile = null;
@@ -48,6 +41,10 @@ if (args.find(v => v.includes('nothrottle'))) {
 if (args.find(v => v.includes('desktop'))) {
     desktop = true;
 }
+if (!outputFile) {
+    const timeStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/ /g, '_').replace(/:/g, '_');
+    outputFile = inputFile.replace('.csv', `-done_${timeStamp}.csv`)
+}
 if (!inputFile || !outputFile) {
     console.log("input=  & output= needed!");
 }
@@ -55,6 +52,14 @@ if (!inputFile || !outputFile) {
     let op = [];
     const browser = await chromium.launch();
     console.log(`Testing with chromium ${browser.version()}`);
+    const android = {
+        userAgent: `Mozilla/5.0 (Linux; Android 6.0.1; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${browser.version()} Mobile Safari/537.36`,
+        viewport: { width: 360, height: 640 },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+        defaultBrowserType: 'chromium'
+    }
     const getMetric = async function(url, cookie) {
 
 

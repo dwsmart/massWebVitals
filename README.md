@@ -53,7 +53,12 @@ On the command line, whilst in the directory you cloned or extracted the files t
 node cwv input=example/input.csv output=example/output.csv
 ```
 
-`input=` is the relative path to the CSV you created, `output=` is the relative path to where you want the script to save the results.
+`input=` is the relative path to the CSV you created, `output=` is the relative path to where you want the script to save the results. This is optional, and if ommitted the results will be saved with the same file / path as the input, but with -done_{timestamp} appended. i.e:
+```
+node cwv input=example/urls.csv
+```
+
+Would output the results to `example/urls-done_2021_05_06_10_00_00.csv`
 
 The script should now run through all the urls specified, output a video for each test in `./videos` and when all the URLs are tested, save the results in the location specified.
 
