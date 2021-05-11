@@ -278,12 +278,13 @@ if (!inputFile || !outputFile) {
                 }),
                 page.waitForTimeout(5000)
             ]);
-            let playwrightVidname = await page.video().path();
-            const finalVidname = sanitizeURL(url);
+
             await page.close();
             await context.close();
-            fs.renameSync(`videos/${playwrightVidname.replace(/^videos\\/g, '').replace(/^videos/g, '')}`, `videos/${finalVidname}`);
-            metricsArray.videoPath = `videos/${finalVidname}`
+            const finalVidname = `videos/${sanitizeURL(url)}`;
+            await page.video().saveAs(finalVidname);
+            await page.video().delete();
+            metricsArray.videoPath = finalVidname;
             return metricsArray;
         } catch (err) {
             console.log('Error loading page:', err);
