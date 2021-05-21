@@ -15,15 +15,15 @@ function sendToHolder({
 }) {
     var holder = document.getElementById('webVitalsHolder');
     if (typeof(holder) === 'undefined' || holder === null) {
-        var holder = document.createElement('div');
+        var holder = document.createElement('span');
         holder.id = 'webVitalsHolder';
         holder.style.position = 'fixed';
         holder.style.bottom = 0;
         holder.style.left = 0;
         holder.style.margin = '5px';
         holder.style.padding = '5px';
-        holder.style.fontFamily = 'monospace';
-        holder.style.fontSize = '1.5rem';
+        holder.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;';
+        holder.style.fontSize = '12px';
         holder.style.backgroundColor = '#fff';
         holder.style.color = '#000';
         holder.style.border = '1px solid #000';
