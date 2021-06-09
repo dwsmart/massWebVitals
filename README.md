@@ -74,6 +74,22 @@ node cwv input=example/input.csv output=example/output.csv desktop nothrottle
 ```
 _(you don't need to add nothrottle, you can run the desktop test throttled by leaving that out)_
 
+##### Traces
+You can record a trace of each page load, to use with the [Playwright Trace Viewer](https://playwright.dev/docs/trace-viewer) just add the `traces` flag:
+```
+node cwv input=example/input.csv output=example/output.csv traces
+```
+
+These save as `.zip` files in the `/traces` directory, you can view them using Playwright's Trace Viewer:
+```
+npx playwright show-trace <path to .zip>
+```
+
+e.g:
+```
+npx playwright show-trace traces/httpstamethebots.com_2021-06-09_09_21_20.zip
+```
+
 #### The Videos
 The video should capture the full test, and will overlay a panel with the CWV. In addition, the LCP element will be outlined with a gold coloured dotted line, and any elements that contributed to the CLS score outlined in a blue dotted line (assuming they didn't get removed or hidden too quickly to see!)
 

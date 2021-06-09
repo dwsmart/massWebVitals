@@ -8,6 +8,7 @@ let inputFile = null;
 let outputFile = null;
 let throttle = true;
 let desktop = false;
+let traces = false;
 let illegalRe = /[\/\?<>\\:\*\|"]/g;
 let controlRe = /[\x00-\x1f\x80-\x9f]/g;
 let reservedRe = /^\.+$/;
@@ -26,7 +27,7 @@ function sanitizeURL(input) {
         .replace(windowsReservedRe, replacement)
         .replace(windowsTrailingRe, replacement);
     const timeStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/ /g, '_').replace(/:/g, '_');
-    return `${sanitized}_${timeStamp}.webm`;
+    return `${sanitized}_${timeStamp}`;
 }
 const args = process.argv.slice(2);
 if (args.find(v => v.includes('input='))) {
@@ -41,6 +42,9 @@ if (args.find(v => v.includes('nothrottle'))) {
 if (args.find(v => v.includes('desktop'))) {
     desktop = true;
 }
+if (args.find(v => v.includes('traces'))) {
+    traces = true;
+}
 if (!outputFile) {
     const timeStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/ /g, '_').replace(/:/g, '_');
     outputFile = inputFile.replace('.csv', `-done_${timeStamp}.csv`)
@@ -48,7 +52,7 @@ if (!outputFile) {
 if (!inputFile || !outputFile) {
     console.log("input=  & output= needed!");
 }
-(async() => {
+(async () => {
     let op = [];
     const browser = await chromium.launch();
     console.log(`Testing with chromium ${browser.version()}`);
@@ -60,7 +64,7 @@ if (!inputFile || !outputFile) {
         hasTouch: true,
         defaultBrowserType: 'chromium'
     }
-    const getMetric = async function(url, cookie) {
+    const getMetric = async function (url, cookie) {
 
 
         let context = await browser.newContext({
@@ -78,6 +82,9 @@ if (!inputFile || !outputFile) {
                     size: { width: 1280, height: 720 }
                 }
             })
+        }
+        if (traces) {
+            await context.tracing.start({ screenshots: true, snapshots: true });
         }
 
         const page = await context.newPage();
@@ -132,156 +139,158 @@ if (!inputFile || !outputFile) {
             await autoScroll(page);
             await page.waitForTimeout(300);
             const metricsArray = await Promise.race([page.evaluate(() => {
-                    return new Promise(resolve => {
-                        let FID = 0;
-                        let CLS = 0;
-                        let LCP = 0;
-                        let CLSscore = { CLS: 0, verdict: 'good - none measured' };
-                        let newCLSscore = { CLS: 0, verdict: 'good - none measured' };
-                        let CLSentries = [];
-                        let LCPVerdict = 0;
-                        let LCPElement = '';
-                        let FIDVerdict = 0;
+                return new Promise(resolve => {
+                    let FID = 0;
+                    let CLS = 0;
+                    let LCP = 0;
+                    let CLSscore = { CLS: 0, verdict: 'good - none measured' };
+                    let newCLSscore = { CLS: 0, verdict: 'good - none measured' };
+                    let CLSentries = [];
+                    let LCPVerdict = 0;
+                    let LCPElement = '';
+                    let FIDVerdict = 0;
 
-                        function sendMetrics() {
-                            setTimeout(function() {
-                                resolve({
-                                    CLSscore,
-                                    newCLSscore,
-                                    CLSentries,
-                                    FID: FIDVerdict,
-                                    LCP: LCPVerdict
-                                }), 3000
-                            });
-                        }
-
-                        new PerformanceObserver(list => {
-                            list.getEntries().forEach(entry => {
-                                if (parseFloat(entry.renderTime) !== 0) {
-                                    LCP = parseFloat(entry.renderTime)
-                                } else {
-                                    parseFloat(entry.renderTime)
-                                }
-                                if (entry.element) {
-                                    let n = entry.element.nodeName;
-
-                                    if (entry.element.id !== '') {
-                                        n += '#' + entry.element.id;
-                                    }
-                                    if (entry.element.className !== '') {
-                                        n += '.' + entry.element.className.replace(/ /g, '.');
-                                    }
-                                    LCPElement = n.replace('.ttb-lcp-candidate', '');
-                                } else {
-                                    LCPElement = '';
-                                }
-
-                                let ver = 'good';
-                                if (LCP > 2500 && LCP <= 4000) {
-                                    ver = 'needs improvement';
-                                }
-                                if (LCP > 4000) {
-                                    ver = 'poor';
-                                }
-                                LCPVerdict = {
-                                    lcp: `${(LCP / 1000).toFixed(2)} s`,
-                                    verdict: ver,
-                                    element: LCPElement
-                                }
-                            });
-                        }).observe({
-                            type: 'largest-contentful-paint',
-                            buffered: true
+                    function sendMetrics() {
+                        setTimeout(function () {
+                            resolve({
+                                CLSscore,
+                                newCLSscore,
+                                CLSentries,
+                                FID: FIDVerdict,
+                                LCP: LCPVerdict
+                            }), 3000
                         });
+                    }
 
-                        new PerformanceObserver(list => {
-                            list.getEntries().forEach(entry => {
-                                if (entry.hadRecentInput) return;
-                                const elist = entry.sources;
-                                let eout = [];
-                                elist.forEach((e) => {
-                                    if (e.node && e.node.nodeType !== 3) {
-                                        let n = e.node.nodeName;
-                                        if (e.node.id !== '') {
-                                            n += '#' + e.node.id;
-                                        }
-                                        if (e.node.className !== '') {
-                                            n += '.' + e.node.className.replace(/ /g, '.');
-                                        }
-                                        eout.push(n.replace('.ttb-lcp-candidate', ''));
-                                    }
-                                });
-                                CLSentries.push({ value: entry.value, sources: JSON.stringify(eout) });
-                                CLS += parseFloat(entry.value);
-                                let ver = 'good';
-                                if (CLS > 0.1 && CLS <= 0.25) {
-                                    ver = 'needs improvement';
-                                }
-                                if (CLS > 0.25) {
-                                    ver = 'poor';
-                                }
-                                CLSscore = { CLS: CLS.toFixed(4), verdict: ver }
-                            });
-                        }).observe({
-                            type: 'layout-shift',
-                            buffered: true
-                        });
-
-                        let max = 0,
-                            curr = 0,
-                            firstTs = Number.NEGATIVE_INFINITY,
-                            prevTs = Number.NEGATIVE_INFINITY;
-
-                        new PerformanceObserver((entryList) => {
-                            for (const entry of entryList.getEntries()) {
-                                if (entry.hadRecentInput) continue;
-                                if (entry.startTime - firstTs > 5000 || entry.startTime - prevTs > 1000) {
-                                    firstTs = entry.startTime;
-                                    curr = 0;
-                                }
-                                prevTs = entry.startTime;
-                                curr += entry.value;
-                                max = Math.max(max, curr);
-                                let ver = 'good';
-                                if (max > 0.1 && max <= 0.25) {
-                                    ver = 'needs improvement';
-                                }
-                                if (max > 0.25) {
-                                    ver = 'poor';
-                                }
-                                newCLSscore = { CLS: max.toFixed(4), verdict: ver }
+                    new PerformanceObserver(list => {
+                        list.getEntries().forEach(entry => {
+                            if (parseFloat(entry.renderTime) !== 0) {
+                                LCP = parseFloat(entry.renderTime)
+                            } else {
+                                parseFloat(entry.renderTime)
                             }
-                        }).observe({ type: 'layout-shift', buffered: true });
+                            if (entry.element) {
+                                let n = entry.element.nodeName;
 
-                        new PerformanceObserver(list => {
-                            list.getEntries().forEach(entry => {
-                                FID = parseFloat(entry.processingStart - entry.startTime);
-                                let ver = 'good';
-                                if (FID > 100 && FID <= 300) {
-                                    ver = 'needs improvement';
+                                if (entry.element.id !== '') {
+                                    n += '#' + entry.element.id;
                                 }
-                                if (FID > 300) {
-                                    ver = 'poor';
+                                if (entry.element.className !== '') {
+                                    n += '.' + entry.element.className.replace(/ /g, '.');
                                 }
+                                LCPElement = n.replace('.ttb-lcp-candidate', '');
+                            } else {
+                                LCPElement = '';
+                            }
 
-                                FIDVerdict = {
-                                    fid: `${FID.toFixed(4)} Ms`,
-                                    verdict: ver
-                                }
-                                sendMetrics();
-                            });
-                        }).observe({
-                            type: 'first-input',
-                            buffered: true
+                            let ver = 'good';
+                            if (LCP > 2500 && LCP <= 4000) {
+                                ver = 'needs improvement';
+                            }
+                            if (LCP > 4000) {
+                                ver = 'poor';
+                            }
+                            LCPVerdict = {
+                                lcp: `${(LCP / 1000).toFixed(2)} s`,
+                                verdict: ver,
+                                element: LCPElement
+                            }
                         });
+                    }).observe({
+                        type: 'largest-contentful-paint',
+                        buffered: true
                     });
-                }),
-                page.waitForTimeout(5000)
-            ]);
 
+                    new PerformanceObserver(list => {
+                        list.getEntries().forEach(entry => {
+                            if (entry.hadRecentInput) return;
+                            const elist = entry.sources;
+                            let eout = [];
+                            elist.forEach((e) => {
+                                if (e.node && e.node.nodeType !== 3) {
+                                    let n = e.node.nodeName;
+                                    if (e.node.id !== '') {
+                                        n += '#' + e.node.id;
+                                    }
+                                    if (e.node.className !== '') {
+                                        n += '.' + e.node.className.replace(/ /g, '.');
+                                    }
+                                    eout.push(n.replace('.ttb-lcp-candidate', ''));
+                                }
+                            });
+                            CLSentries.push({ value: entry.value, sources: JSON.stringify(eout) });
+                            CLS += parseFloat(entry.value);
+                            let ver = 'good';
+                            if (CLS > 0.1 && CLS <= 0.25) {
+                                ver = 'needs improvement';
+                            }
+                            if (CLS > 0.25) {
+                                ver = 'poor';
+                            }
+                            CLSscore = { CLS: CLS.toFixed(4), verdict: ver }
+                        });
+                    }).observe({
+                        type: 'layout-shift',
+                        buffered: true
+                    });
+
+                    let max = 0,
+                        curr = 0,
+                        firstTs = Number.NEGATIVE_INFINITY,
+                        prevTs = Number.NEGATIVE_INFINITY;
+
+                    new PerformanceObserver((entryList) => {
+                        for (const entry of entryList.getEntries()) {
+                            if (entry.hadRecentInput) continue;
+                            if (entry.startTime - firstTs > 5000 || entry.startTime - prevTs > 1000) {
+                                firstTs = entry.startTime;
+                                curr = 0;
+                            }
+                            prevTs = entry.startTime;
+                            curr += entry.value;
+                            max = Math.max(max, curr);
+                            let ver = 'good';
+                            if (max > 0.1 && max <= 0.25) {
+                                ver = 'needs improvement';
+                            }
+                            if (max > 0.25) {
+                                ver = 'poor';
+                            }
+                            newCLSscore = { CLS: max.toFixed(4), verdict: ver }
+                        }
+                    }).observe({ type: 'layout-shift', buffered: true });
+
+                    new PerformanceObserver(list => {
+                        list.getEntries().forEach(entry => {
+                            FID = parseFloat(entry.processingStart - entry.startTime);
+                            let ver = 'good';
+                            if (FID > 100 && FID <= 300) {
+                                ver = 'needs improvement';
+                            }
+                            if (FID > 300) {
+                                ver = 'poor';
+                            }
+
+                            FIDVerdict = {
+                                fid: `${FID.toFixed(4)} Ms`,
+                                verdict: ver
+                            }
+                            sendMetrics();
+                        });
+                    }).observe({
+                        type: 'first-input',
+                        buffered: true
+                    });
+                });
+            }),
+            page.waitForTimeout(5000)
+            ]);
+            if (traces) {
+                await context.tracing.stop({ path: `traces/${sanitizeURL(url)}.zip` });
+            }
             await page.close();
             await context.close();
-            const finalVidname = `videos/${sanitizeURL(url)}`;
+            const finalVidname = `videos/${sanitizeURL(url)}.webm`;
             await page.video().saveAs(finalVidname);
             await page.video().delete();
             metricsArray.videoPath = finalVidname;
@@ -295,7 +304,7 @@ if (!inputFile || !outputFile) {
     }
     let testURLs = []
     const csvPipe = fs.createReadStream(inputFile).pipe(csv());
-    csvPipe.on('data', async(row) => {
+    csvPipe.on('data', async (row) => {
         csvPipe.pause();
         testURLs.push({ url: row.url, cookie: row.cookie_close });
 
@@ -340,7 +349,7 @@ if (!inputFile || !outputFile) {
 })();
 
 async function autoScroll(page) {
-    await page.evaluate(async() => {
+    await page.evaluate(async () => {
         await new Promise((resolve, reject) => {
             var totalHeight = 0;
             var distance = 100;
