@@ -191,7 +191,7 @@ if (!inputFile || !outputFile) {
                                 ver = 'poor';
                             }
                             LCPVerdict = {
-                                lcp: `${(LCP / 1000).toFixed(2)} s`,
+                                lcp: `${(LCP / 1000).toFixed(2)}`,
                                 verdict: ver,
                                 element: LCPElement
                             }
@@ -272,7 +272,7 @@ if (!inputFile || !outputFile) {
                             }
 
                             FIDVerdict = {
-                                fid: `${FID.toFixed(4)} Ms`,
+                                fid: `${FID.toFixed(4)}`,
                                 verdict: ver
                             }
                             sendMetrics();
@@ -340,7 +340,7 @@ if (!inputFile || !outputFile) {
             }
         }
         console.log(`creating ${outputFile}`);
-        const j2csv = new Json2csv(['url', 'newCLS', 'newCLS Verdict', 'oldCLS', 'OldCLS Verdict', 'CLS Entries', 'FID', 'FID Verdict', 'LCP', 'LCP Verdict', 'LCP Element', 'Video']);
+        const j2csv = new Json2csv(['url', 'newCLS', 'newCLS Verdict', 'oldCLS', 'OldCLS Verdict', 'CLS Entries', 'FID (Ms)', 'FID Verdict', 'LCP (s)', 'LCP Verdict', 'LCP Element', 'Video']);
         const csv = j2csv.parse(op);
         fs.writeFileSync(outputFile, csv, 'utf-8')
         console.log(`${outputFile} saved - done!`);
