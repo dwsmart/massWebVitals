@@ -17,8 +17,8 @@ But … It doesn't scroll the page or offer video capture at the moment. Scrolli
 
 ## Install
 * Click on [The lastest release](https://github.com/dwsmart/massWebVitals/releases/latest) and download the zip or tar.gz.
-* Clone them, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
-* Download the zip file (click the green code button and click Download Zip).
+* OR you can clone this repository, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository). This will get the very latest code, which might be untested.
+* OR you can download the zip file (click the green code button and click Download Zip). Like cloning, this will get the very latest code, which might be untested.
 
 Then on the command line, whilst in the directory you cloned or extracted the files to:
 ```
