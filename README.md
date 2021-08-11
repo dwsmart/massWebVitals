@@ -1,5 +1,5 @@
 # massWebVitals
-A node CLI script to grab [Largest Contentful Paint](https://web.dev/lcp/), [First Input Delay](https://web.dev/fid/) & [Cumulative Layout Shift](https://web.dev/cls/) for a list of pages specified in a `.csv` file.
+A node CLI script to grab [Largest Contentful Paint](https://web.dev/lcp/), [First Input Delay](https://web.dev/fid/), [Cumulative Layout Shift](https://web.dev/cls/) & [Time to first byte (TTFB)](https://web.dev/time-to-first-byte/) for a list of pages specified in a `.csv` file.
 
 The script will load the page, scroll down it's entire length & capture a video in `.webm` format, with the CWV overlaid (in most cases). It will then produce a `.csv` value with the test results for each URL, and a reference to the video file.
 
@@ -109,6 +109,7 @@ The csv will contain the following columns
 * `LCP` - The LCP score (In Seconds).
 * `LCPVerdit` - Poor, Needs Improvement or Good, based on the currently published thresholds.
 * `LCPElement` - The Element that was the candidate for LCP.
+* `TTFB` - Time to first byte, in Ms.
 * `video` - The path to the video screen capture of the test.
 
 ## STEAL THIS SCRIPT!!!!

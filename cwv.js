@@ -101,7 +101,7 @@ if (!inputFile || !outputFile) {
         }
         try {
             await page.goto(url, {
-                waitUntil: 'networkidle'
+                timeout: 60000
             });
             if (cookie !== '') {
                 await page.click(cookie);
@@ -149,6 +149,7 @@ if (!inputFile || !outputFile) {
                     let LCPVerdict = 0;
                     let LCPElement = '';
                     let FIDVerdict = 0;
+                    let TTFB = 0;
 
                     function sendMetrics() {
                         setTimeout(function () {
@@ -157,10 +158,17 @@ if (!inputFile || !outputFile) {
                                 newCLSscore,
                                 CLSentries,
                                 FID: FIDVerdict,
-                                LCP: LCPVerdict
+                                LCP: LCPVerdict,
+                                TTFB
                             }), 3000
                         });
                     }
+                    const perfEntries = performance.getEntriesByType("navigation");
+                    const root = perfEntries[0];
+                    let ttfbMeasure = root.responseStart - root.requestStart;
+                   if (ttfbMeasure > 0) {
+                       TTFB = Math.round(ttfbMeasure)
+                   }
 
                     new PerformanceObserver(list => {
                         list.getEntries().forEach(entry => {
@@ -281,6 +289,7 @@ if (!inputFile || !outputFile) {
                         type: 'first-input',
                         buffered: true
                     });
+                    
                 });
             }),
             page.waitForTimeout(5000)
@@ -319,8 +328,8 @@ if (!inputFile || !outputFile) {
         for (let i = 0; i < urls.length; i++) {
             let data = await getMetric(urls[i].url, urls[i].cookie);
             if (data && data.CLSscore) {
-                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `LCP: ${data.LCP.lcp} FID: ${data.FID.fid} old CLS: ${data.CLSscore.CLS} new CLS: ${data.newCLSscore.CLS}`)
-                op.push({ url: urls[i].url, newCLS: data.newCLSscore.CLS, newCLSVerdict: data.newCLSscore.verdict, oldCLS: data.CLSscore.CLS, oldCLSVerdict: data.CLSscore.verdict, CLSentries: JSON.stringify(data.CLSentries, null, 2), FID: data.FID.fid, FIDVerdict: data.FID.verdict, LCP: data.LCP.lcp, LCPVerdict: data.LCP.verdict, LCPElement: data.LCP.element, video: data.videoPath })
+                console.log(`${i + 1} of ${urls.length} `, urls[i].url, `TTFB: ${data.TTFB} LCP: ${data.LCP.lcp} FID: ${data.FID.fid} old CLS: ${data.CLSscore.CLS} new CLS: ${data.newCLSscore.CLS}`)
+                op.push({ url: urls[i].url, newCLS: data.newCLSscore.CLS, newCLSVerdict: data.newCLSscore.verdict, oldCLS: data.CLSscore.CLS, oldCLSVerdict: data.CLSscore.verdict, CLSentries: JSON.stringify(data.CLSentries, null, 2), FID: data.FID.fid, FIDVerdict: data.FID.verdict, LCP: data.LCP.lcp, LCPVerdict: data.LCP.verdict, LCPElement: data.LCP.element, TTFB: data.TTFB, video: data.videoPath })
             } else {
                 console.log(`${i + 1} of ${urls.length} `, urls[i].url, 'Error');
                 op.push({
@@ -335,6 +344,7 @@ if (!inputFile || !outputFile) {
                     LCP: '',
                     LCPVerdict: '',
                     LCPElement: '',
+                    TTFB: '',
                     video: ''
                 })
             }
