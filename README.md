@@ -16,8 +16,9 @@ Lighthouse is an awesome tool, I use it too! Plus you get _A LOT_ more that CWV!
 But … It doesn't scroll the page or offer video capture at the moment. Scrolling the page will catch some of the CLS that other lab tools miss, around lazy load things, for example. There are still clear blind spots, like interacting with menus etc.
 
 ## Install
-
-Download the files from git, you can clone them, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository) or download the zip file (click the green code button and click Download Zip), or just click on the latest release and download the files.
+* Click on [The lastest release](https://github.com/dwsmart/massWebVitals/releases/latest) and download the zip or tar.gz.
+* Clone them, [see guide](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
+* Download the zip file (click the green code button and click Download Zip).
 
 Then on the command line, whilst in the directory you cloned or extracted the files to:
 ```
