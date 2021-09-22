@@ -1,6 +1,6 @@
 {
     "name": "masswebvitals",
-    "version": "0.0.9",
+    "version": "0.1.2",
     "description": "Get Lab CWV for a List of URLs from a CSV, including video screenshot",
     "main": "cwv.js",
     "scripts": {
@@ -24,6 +24,6 @@
     "dependencies": {
         "csv-parser": "^3.0.0",
         "json2csv": "^5.0.6",
-        "playwright": "^1.14.0"
+        "playwright": "^1.15.0"
     }
 }
