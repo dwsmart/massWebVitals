@@ -107,4 +107,5 @@ dist
 videos/*.webm
 traces/*.zip
 .vscode/
+.package-lock.json
 tests
