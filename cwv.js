@@ -64,9 +64,9 @@ if (!inputFile || !outputFile) {
         hasTouch: true,
         defaultBrowserType: 'chromium'
     }
-    const getMetric = async function (url, cookie) {
+    const getMetric = async function (url, cookie, warmup = false) {
 
-
+        
         let context = await browser.newContext({
             ...android,
             recordVideo: {
@@ -83,7 +83,7 @@ if (!inputFile || !outputFile) {
                 }
             })
         }
-        if (traces) {
+        if (traces && !warmup) {
             await context.tracing.start({ screenshots: true, snapshots: true });
         }
 
@@ -103,7 +103,7 @@ if (!inputFile || !outputFile) {
             await page.goto(url, {
                 timeout: 60000
             });
-            if (cookie !== '') {
+            if (cookie !== '' && !warmup) {
                 await page.click(cookie);
                 try {
                     await page.addScriptTag({ content: jsContent.toString() })
@@ -300,9 +300,11 @@ if (!inputFile || !outputFile) {
             await page.close();
             await context.close();
             const finalVidname = `videos/${sanitizeURL(url)}.webm`;
+            if (!warmup) {
             await page.video().saveAs(finalVidname);
+            }
             await page.video().delete();
-            metricsArray.videoPath = finalVidname;
+            
             return metricsArray;
         } catch (err) {
             console.log('Error loading page:', err);
@@ -325,6 +327,7 @@ if (!inputFile || !outputFile) {
 
     async function doTest(urls) {
         console.log(`Testing ${urls.length} URLs`);
+        const warmup = await getMetric('https://example.com', '', true);
         for (let i = 0; i < urls.length; i++) {
             let data = await getMetric(urls[i].url, urls[i].cookie);
             if (data && data.CLSscore) {
