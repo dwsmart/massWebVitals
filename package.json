@@ -24,6 +24,6 @@
     "dependencies": {
         "csv-parser": "^3.0.0",
         "json2csv": "^5.0.7",
-        "playwright": "^1.27.1"
+        "playwright": "^1.28.1"
     }
 }
