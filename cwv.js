@@ -9,6 +9,7 @@ let outputFile = null;
 let throttle = true;
 let desktop = false;
 let traces = false;
+let headless = true;
 let illegalRe = /[\/\?<>\\:\*\|"]/g;
 let controlRe = /[\x00-\x1f\x80-\x9f]/g;
 let reservedRe = /^\.+$/;
@@ -45,6 +46,9 @@ if (args.find(v => v.includes('desktop'))) {
 if (args.find(v => v.includes('traces'))) {
     traces = true;
 }
+if (args.find(v => v.includes('paint'))) {
+    headless = false;
+}
 if (!outputFile) {
     const timeStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/ /g, '_').replace(/:/g, '_');
     outputFile = inputFile.replace('.csv', `-done_${timeStamp}.csv`)
@@ -54,7 +58,7 @@ if (!inputFile || !outputFile) {
 }
 (async() => {
     let op = [];
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({headless: headless});
     console.log(`Testing with chromium ${browser.version()}`);
     const android = {
         userAgent: `Mozilla/5.0 (Linux; Android 6.0.1; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${browser.version()} Mobile Safari/537.36`,
